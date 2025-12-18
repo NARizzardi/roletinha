@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roleta com Som e Tique</title>
+    <style>
+        :root {
+            --cor-raro: #ff4757;
+            --cor-comum: #2ed573;
+            --cor-pino: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .wheel-outer {
+            position: relative;
+            padding: 15px;
+            border-radius: 50%;
+            background: #333;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+
+        /* Ponteiro */
+        .marker {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; 
+            height: 0; 
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 35px solid #f1c40f;
+            z-index: 10;
+            transform-origin: top center;
+        }
+
+        /* Animação de impacto do ponteiro */
+        .tick-active {
+            animation: pointer-bump 0.1s ease-out;
+        }
+
+        @keyframes pointer-bump {
+            0% { transform: translateX(-50%) rotate(0deg); }
+            50% { transform: translateX(-50%) rotate(-25deg); }
+            100% { transform: translateX(-50%) rotate(0deg); }
+        }
+
+        .wheel {
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            position: relative;
+            background: conic-gradient(
+                var(--cor-raro) 0% 12.5%, 
+                var(--cor-comum) 12.5% 100%
+            );
+            transition: transform 4s cubic-bezier(0.15, 0, 0.2, 1);
+            border: 8px solid #444;
+            overflow: visible;
+        }
+
+        .pin {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--cor-pino);
+            border-radius: 50%;
+            left: 50%;
+            top: 5px;
+            transform-origin: 50% 155px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        button {
+            margin-top: 40px;
+            padding: 18px 60px;
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background-color: #f1c40f;
+            color: #333;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #b7950b;
+            transition: all 0.1s;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #b7950b;
+        }
+
+        button:disabled {
+            background-color: #555;
+            box-shadow: 0 6px 0 #222;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        #result {
+            margin-top: 30px;
+            font-size: 26px;
+            font-weight: bold;
+            height: 35px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wheel-outer">
+        <div id="marker" class="marker"></div>
+        <div id="wheel" class="wheel"></div>
+    </div>
+
+    <button id="spinBtn" onclick="spinWheel()">Girar Roleta</button>
+    <div id="result"></div>
+
+    <script>
+        const wheel = document.getElementById('wheel');
+        const marker = document.getElementById('marker');
+        const btn = document.getElementById('spinBtn');
+        const resultDisplay = document.getElementById('result');
+
+        // Criação dos pinos
+        for (let i = 0; i < 8; i++) {
+            const pin = document.createElement('div');
+            pin.className = 'pin';
+            pin.style.transform = `translateX(-50%) rotate(${i * 45}deg)`;
+            wheel.appendChild(pin);
+        }
+
+        // --- SISTEMA DE ÁUDIO (Tique Mecânico) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTickSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            // Criamos um buffer de ruído branco para o "estalo" metálico
+            const bufferSize = audioCtx.sampleRate * 0.02; // 20ms de som
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            // Preenche o buffer com ruído aleatório
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            // Filtro para tirar o "chiado" e deixar o som mais "seco/clicado"
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 2500; // Frequência do clique
+            filter.Q.value = 1.5;
+
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.015);
+
+            noise.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            noise.start();
+        }
+
+        let currentRotation = 0;
+        let lastDetectedSector = -1;
+
+        function spinWheel() {
+            // Reativa o context de áudio (exigência de navegadores modernos após clique)
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            btn.disabled = true;
+            resultDisplay.textContent = "";
+            
+            const randomChance = Math.random();
+            const isRare = randomChance < 0.125;
+            
+            // Ângulo de parada
+            let targetAngle = isRare ? (Math.random() * 40 + 2) : (Math.random() * 310 + 47);
+
+            const spins = 7;
+            const stopAngle = 360 - targetAngle;
+            const totalRotation = Math.ceil(currentRotation / 360) * 360 + (spins * 360) + stopAngle;
+            
+            // Inicia o monitoramento dos tiques
+            monitorTicks();
+            
+            currentRotation = totalRotation;
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                resultDisplay.textContent = isRare ? "🏆 PRÊMIO RARO!" : "Valor Comum";
+                resultDisplay.style.color = isRare ? "#ff4757" : "#2ed573";
+                btn.disabled = false;
+            }, 4000);
+        }
+
+        function monitorTicks() {
+            const style = window.getComputedStyle(wheel);
+            const matrix = new WebKitCSSMatrix(style.transform);
+            
+            // Calcula o ângulo atual da roleta
+            const angle = Math.round(Math.atan2(matrix.b, matrix.a) * (180 / Math.PI));
+            const normalizedAngle = (angle < 0) ? angle + 360 : angle;
+
+            // Divide em 8 setores (45 graus cada)
+            const sectorSize = 45;
+            const currentSector = Math.floor((normalizedAngle + (sectorSize / 2)) / sectorSize) % 8;
+
+            if (currentSector !== lastDetectedSector) {
+                // Se mudou de setor, aciona o som e a animação
+                playTickSound();
+                
+                marker.classList.remove('tick-active');
+                void marker.offsetWidth; // Reinicia animação CSS
+                marker.classList.add('tick-active');
+                
+                lastDetectedSector = currentSector;
+            }
+
+            if (btn.disabled) {
+                requestAnimationFrame(monitorTicks);
+            }
+        }
+    </script>
+</body>
+</html>

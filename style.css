@@ -1,0 +1,28 @@
+body {
+  background-color: palevioletred;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: center ;
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+a:link{
+  text-decoration: none;
+  color: black;
+}
+ a:visited {
+  text-decoration: none;
+  color: white;
+}
+ a:hover {
+  text-decoration: none;
+  color: #555;
+}
+ a:active{
+  text-decoration: none;
+  color: black;
+}
