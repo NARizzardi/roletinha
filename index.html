@@ -6,34 +6,37 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div>
-
+  <header class="header">
     <h1> Feliz natal!</h1>
     <span> Em qual lista do papai noel você se encontra?</span>
-  </div>
-    <hr>
-    <div>
+  </header>
 
-      <div id="wheel"></div>
+  <main class="body">
+    <section class="wheel-section">
       
-    </div>
-<hr>
-    <div>
-
+      <section class="wheel-outer">
+        <div id="wheel" class="wheel"></div>
+        <div id="marker" class="marker"></div>
+      </section>
+      
+    </section>
+    <section class="">
+      
       <span>Me diga seu nome</span>
       <br>
       <input type="text" name="name" id="" placeholder="Nome">
       <button type="button" id="submit" onclick="">Girar</button>
-    </div>
+    </section>
 
-    <div>
+    <section class="result">
       <span id="resultado"></span>
-    </div>
-<hr>
-    <footer>
-      <a target="_blank" href="https://www.linkedin.com/in/nicolas-rizzardi-9140971a4/">LinkedIn</a>
-      <a target="_blank" href="https://github.com/narizzardi">Github</a>
-    </footer>
+    </section>
+  </main>
+  <footer>
+    <a target="_blank" href="./a.html">Objetivo</a>
+    <a target="_blank" href="https://www.linkedin.com/in/nicolas-rizzardi-9140971a4/">LinkedIn</a>
+    <a target="_blank" href="https://github.com/narizzardi">Github</a>
+  </footer>
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,10 +1,38 @@
 body {
-  background-color: palevioletred;
+  background-color: #1a1a1a;
+  color: white;
   font-family: Verdana, Geneva, Tahoma, sans-serif;
   display: flex;
   flex-direction: column;
   justify-content: center ;
+  align-items: center;
+  /*height: 100vh;
+  /*margin: 0;*/
 }
+
+.wheel-outer {
+  position: relative;
+  padding: 15px;
+  background-color: #333;
+  border-radius: 50%;
+  box-shadow: 0, 10px, 40px rgba(0,0,0,0.6);
+}
+
+.marker {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+}
+
+.wheel {
+  width: 320px;
+  height: 320px;
+  
+  background-color: lightgreen;
+  border-radius: 50%;
+}
+
+
 
 button:hover {
   cursor: pointer;
@@ -12,7 +40,7 @@ button:hover {
 
 a:link{
   text-decoration: none;
-  color: black;
+  color: white;
 }
  a:visited {
   text-decoration: none;
@@ -24,5 +52,5 @@ a:link{
 }
  a:active{
   text-decoration: none;
-  color: black;
+  color: white;
 }
